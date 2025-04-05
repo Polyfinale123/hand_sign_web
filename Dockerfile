@@ -1,23 +1,26 @@
-# Use a lightweight Python image
+# Use an official Python image as base
 FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Install system dependencies for OpenCV
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
+# Set the working directory
 WORKDIR /app
 
-# Copy and install dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy all project files
+# Copy all files into the container
 COPY . .
 
-# Expose the port Flask runs on
-EXPOSE 5000
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Run the Flask app
-CMD ["python", "app.py"]
+# Expose port (Render uses this)
+EXPOSE 10000
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+# Start the Flask app with gunicorn
+CMD ["gunicorn", "app:app", "-b", "0.0.0.0:10000"]
