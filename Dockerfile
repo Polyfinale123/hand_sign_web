@@ -1,20 +1,34 @@
-# Base image
+# Use the official Python image
 FROM python:3.11-slim
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y libgl1-mesa-glx
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Create working directory
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libgl1-mesa-glx \
+    ffmpeg \
+    && apt-get clean
+
+# Set work directory
 WORKDIR /app
 
-# Copy files
-COPY . .
+# Copy requirements
+COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port
-EXPOSE 5000
+# Copy project files
+COPY . .
 
-# Start the app
-CMD ["python", "app.py"]
+# Expose port
+EXPOSE 10000
+
+# Run the app
+CMD ["python3", "app.py"]
