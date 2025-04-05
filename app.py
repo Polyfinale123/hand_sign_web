@@ -10,7 +10,7 @@ import os
 app = Flask(__name__)
 
 # Load your trained model
-model = pickle.load(open("model.pkl", "rb"))
+model = pickle.load(open("model_videos.p", "rb"))
 
 @app.route('/')
 def index():
