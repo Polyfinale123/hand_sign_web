@@ -1,81 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Sign Language Recognition</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f0f0f0;
-    }
-    #video-container {
-      margin-top: 20px;
-    }
-    video, img {
-      border-radius: 10px;
-    }
-    #logs {
-      margin-top: 20px;
-      max-width: 800px;
-      margin-inline: auto;
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      text-align: left;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 18px;
-      margin-top: 20px;
-      cursor: pointer;
-    }
-  </style>
+    <title>Hand Sign Recognition</title>
 </head>
 <body>
-  <h1>Sign Language to Speech</h1>
-  <button onclick="startCamera()">Start Camera</button>
-  <div id="video-container"></div>
+    <h1>Hand Sign Recognition</h1>
+    <video id="video" width="400" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <p id="result">Prediction: None</p>
+    <button onclick="startCamera()">Start Camera</button>
 
-  <div id="logs">
-    <h2>Conversation Log</h2>
-    <ul id="log-list"></ul>
-  </div>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const result = document.getElementById('result');
+        const ctx = canvas.getContext('2d');
 
-  <script>
-    let spokenSet = new Set();
+        async function startCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
 
-    function startCamera() {
-      document.getElementById('video-container').innerHTML = `
-        <img src="/video_feed" width="640" height="480" />
-      `;
-      fetchLogs();
-      setInterval(fetchLogs, 2000);
-    }
+            setInterval(() => {
+                ctx.drawImage(video, 0, 0, canvas.width = 64, canvas.height = 64);
+                const imageData = canvas.toDataURL('image/jpeg');
+                
+                fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ image: imageData })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.prediction) {
+                        result.innerText = `Prediction: ${data.prediction}`;
+                        speak(data.prediction);
+                    }
+                });
+            }, 2000); // every 2 seconds
+        }
 
-    function fetchLogs() {
-      fetch('/logs')
-        .then(response => response.json())
-        .then(logs => {
-          const list = document.getElementById('log-list');
-          list.innerHTML = '';
-          logs.forEach(text => {
-            const item = document.createElement('li');
-            item.textContent = text;
-            list.appendChild(item);
-            if (!spokenSet.has(text)) {
-              speakText(text);
-              spokenSet.add(text);
-            }
-          });
-        });
-    }
-
-    function speakText(text) {
-      const msg = new SpeechSynthesisUtterance(text);
-      window.speechSynthesis.speak(msg);
-    }
-  </script>
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            speechSynthesis.speak(utterance);
+        }
+    </script>
 </body>
 </html>
